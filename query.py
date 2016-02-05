@@ -23,9 +23,9 @@ cache_it = pyfscache.FSCache('cache')
 ignored = ["_design/app ", "_design/scratch"]
 
 ## Template for a item in a cudf file
-cudf = """package: {{name}}
-version: {{version}}
-depends: {{dependencies}}
+cudf = """Package: {{name}}
+Version: {{version}}
+Depends: {{dependencies}}
 """
 
 
