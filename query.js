@@ -41,6 +41,17 @@ sequence
     //})
     //here is the important part
     .then(function(next){
+        registry_fixed.list({include_docs: true}, next);
+    })
+    .then(function(next, err, body){
+        function iter(acc, x){
+            acc[x["id"]] = x["doc"]["value"];
+            return acc;
+        }
+        var table = _.reduce(body.rows, iter, {});
+        next(table);
+    })
+    .then(function(next, table){
         console.log("Generating dependencies");
         registry.view("deps", "all?limit=5000", function(err, body){
 
@@ -58,15 +69,16 @@ sequence
 
                     function iterator(deps_satisfied, dep, callback){
                         var request = package["value"][version][dep];
-                        registry_fixed.get(dep, function(err, body){
-                            if(body !== undefined){
-                                var satisfies = _.filter(body.value, function(x){ return semver.satisfies(x, request)});
+                        //registry_fixed.get(dep, function(err, body){
+
+                            if(table[dep] !== undefined){
+                                var satisfies = _.filter(table[dep], function(x){ return semver.satisfies(x, request)});
                             }else{
                                 deps_satisfied[dep] = [];
                             }
                             deps_satisfied[dep] = satisfies;
                             callback(null, deps_satisfied);
-                        });
+                        //});
                     }
 
                     async.reduce(deps, {}, iterator, function(err, result){
