@@ -104,81 +104,74 @@ def fix_tabla(tabla):
         return nueva
     return f
 
-def generar_dependencias(packages, tabla):
+def generar_dependencias(p, tabla):
     """
     Generates the dependencies of a package using the npm semver comparator
     running in a NPM server
     """
     dependencias = {}
-    total = len(packages)
-    i = 0
-    for p in packages:
-        # For each package, we get all the information in the database
-        if i >= 1000:
-            break
-        print str(i) + "/" + str(total) + " (" + str(100.0 / total * i) + ")"
-        id = p["id"]
-        if p["id"] in ignored:
-            print "Skiping " + p["id"]
-            continue
-        p = db.get(p["id"])
+    # For each package, we get all the information in the database
+    id = p["id"]
+    if p["id"] in ignored:
+        print "Skiping " + p["id"]
+        return dependencias
+    p = db.get(p["id"])
+    try:
+        nombre = p["name"]
+    except:
+        return dependencias
+    print "Haciendo " + nombre
+    deps = []
+    for v in p["versions"].keys():
+        # for each version of the package, we try to find the dependencies
+        # that satisfies the one needed by it
         try:
-            nombre = p["name"]
-        except:
-            continue
-        print "Haciendo " + nombre
-        deps = []
-        for v in p["versions"].keys():
-            # for each version of the package, we try to find the dependencies
-            # that satisfies the one needed by it
-            try:
-                dependencies = p["versions"][v]["dependencies"]
-                for dep in dependencies.keys():
-                    # for each dependencie, we ask what versions of that package
-                    # satisfies the one required.
-                    version_request = dependencies[dep]
-                    if version_request.find("/") != -1:
-                        # This is not a version, just use it as it
-                        print version_request + " no es una version semantica"
-                        try:
-                            dependencias[nombre + ";" + v]
-                            dependencias[nombre + ";" + v][dep] = [version_request]
-                        except KeyError:
-                            dependencias[nombre + ";" + v] = { dep: [version_request] }
-                        continue
-
-                    disp = tabla[dep]
-                    if version_request == "":
-                        # if the package don't specifies a version, then it can
-                        # be anyone
-                        try:
-                            dependencias[nombre + ";" + v]
-                            dependencias[nombre + ";" + v][dep] = disp
-                        except KeyError:
-                            dependencias[nombre + ";" + v] = { dep: disp }
-                        continue
-
-                    # We search in the table the available verions of a package.
-                    disponibles = ""
-                    others = []
-                    for d in disp:
-                        disponibles = disponibles + " " + d
-
-                    r = requests.get("http://localhost:3003/" + version_request + "/" + json.dumps(disponibles))
+            dependencies = p["versions"][v]["dependencies"]
+            for dep in dependencies.keys():
+                # for each dependencie, we ask what versions of that package
+                # satisfies the one required.
+                version_request = dependencies[dep]
+                if version_request.find("/") != -1:
+                    # This is not a version, just use it as it
+                    print version_request + " no es una version semantica"
                     try:
-                        try:
-                            dependencias[nombre + ";" + v]
-                            dependencias[nombre + ";" + v][dep] = r.json()
-                        except KeyError:
-                            dependencias[nombre + ";" + v] = { dep: r.json() }
-                    except:
-                        print r.text
-                        print "http://localhost:3003/" + version_request + "/" + json.dumps(disponibles)
-                        exit(-1)
-            except KeyError:
-                # This package doesn't have any version
-                dependencias[nombre + ";" + v] = {}
-        i = i + 1
+                        dependencias[nombre + ";" + v]
+                        dependencias[nombre + ";" + v][dep] = [version_request]
+                    except KeyError:
+                        dependencias[nombre + ";" + v] = { dep: [version_request] }
+                    return dependencias
+
+                disp = tabla[dep]
+                if version_request == "":
+                    # if the package don't specifies a version, then it can
+                    # be anyone
+                    try:
+                        dependencias[nombre + ";" + v]
+                        dependencias[nombre + ";" + v][dep] = disp
+                    except KeyError:
+                        dependencias[nombre + ";" + v] = { dep: disp }
+                    continue
+
+                # We search in the table the available verions of a package.
+                disponibles = ""
+                others = []
+                for d in disp:
+                    disponibles = disponibles + " " + d
+
+                r = requests.get("http://localhost:3003/" + version_request + "/" + json.dumps(disponibles))
+                try:
+                    try:
+                        dependencias[nombre + ";" + v]
+                        dependencias[nombre + ";" + v][dep] = r.json()
+                    except KeyError:
+                        dependencias[nombre + ";" + v] = { dep: r.json() }
+                except:
+                    print r.text
+                    print "http://localhost:3003/" + version_request + "/" + json.dumps(disponibles)
+                    exit(-1)
+        except KeyError:
+            # This package doesn't have any version
+            dependencias[nombre + ";" + v] = {}
     return dependencias
 
 def generate_cudf(packages):
@@ -202,7 +195,7 @@ def generate_deps_cudf(deps):
     dependencies = ""
     total = len(deps.keys()) - 1
     for i, d in enumerate(deps.keys()):
-        versions = map(lambda version: d + "=" + version,  deps[d])
+        versions = map(lambda version: d + "(=" + version + ")",  deps[d])
         versions =  " | ".join(versions)
         if i != total:
             dependencies = dependencies + versions + ", "
@@ -232,25 +225,30 @@ def take(l, m):
 if __name__ == "__main__":
     print "Gettting the documents"
     all_docs = get_all_docs()            
-    print "Generating the table"
-    tabla = generar_tabla(all_docs)
-    print "Fixing the versions in the table"
-    f = fix_tabla(tabla)
-    p = Pool(3)
-    tabla = p.map(f, enumerate(tabla.keys()))
-    print "Mergin the table"
-    tabla = merge_dic(tabla)
-    print "Saving step..."
-    f = open("tabla.bin", "wb")
-    pickle.dump(tabla, f)
-    f.close()
-    exit(0)
+    # print "Generating the table"
+    # tabla = generar_tabla(all_docs)
+    # print "Fixing the versions in the table"
+    # f = fix_tabla(tabla)
+    # p = Pool(3)
+    # tabla = p.map(f, enumerate(tabla.keys()))
+    # print "Mergin the table"
+    # tabla = merge_dic(tabla)
+    # print "Saving step..."
+    # f = open("tabla.bin", "wb")
+    # pickle.dump(tabla, f)
+    # f.close()
+    # exit(0)
     print "The table is ready"
     print "Reading the table"
     f = open("tabla.bin", "rb")
     tabla = pickle.load(f)
     f.close()
-    deps = generar_dependencias(all_docs, tabla)
+    # Generando dependencias
+    def fun(p):
+        return generar_dependencias(p, tabla)
+    #p2 = Pool(3)
+    deps = map(fun, take(all_docs, 50000))
+    deps = merge_dic(deps)
     print "The dependencies are ready"
     print "Generating CUDF"
     cudf_txt = generate_cudf(deps)
