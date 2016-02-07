@@ -53,7 +53,8 @@ sequence
     })
     .then(function(next, table){
         console.log("Generating dependencies");
-        registry.view("deps", "all?limit=5000", function(err, body){
+        var cache = {};
+        registry.view("deps", "all?limit=20000", function(err, body){
 
             function iterator(package, callback){
                 var versions = [];
@@ -69,16 +70,30 @@ sequence
 
                     function iterator(deps_satisfied, dep, callback){
                         var request = package["value"][version][dep];
-                        //registry_fixed.get(dep, function(err, body){
-
+                        if(cache[dep] !== undefined){
+                            if(cache[dep][request] !== undefined){
+                                deps_satisfied[dep] = cache[dep][request];
+                            }else{
+                                if(table[dep] !== undefined){
+                                    var satisfies = _.filter(table[dep], function(x){ return semver.satisfies(x, request)});
+                                    cache[dep][request] = satisfies;
+                                    deps_satisfied[dep] = satisfies;
+                                }else{
+                                    deps_satisfied[dep] = [];
+                                }
+                            }
+                        }else{
+                            cache[dep] = {};
                             if(table[dep] !== undefined){
                                 var satisfies = _.filter(table[dep], function(x){ return semver.satisfies(x, request)});
+                                cache[dep][request] = satisfies;
+                                deps_satisfied[dep] = satisfies;
                             }else{
                                 deps_satisfied[dep] = [];
                             }
-                            deps_satisfied[dep] = satisfies;
-                            callback(null, deps_satisfied);
-                        //});
+                        }
+
+                        callback(null, deps_satisfied);
                     }
 
                     async.reduce(deps, {}, iterator, function(err, result){
