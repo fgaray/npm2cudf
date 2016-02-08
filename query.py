@@ -16,7 +16,7 @@ def get_all_docs():
     Get all the documents/packages of npm
     """
     print "Getting all documents..."
-    r = requests.get("http://localhost:5984/registry_dependencies/_all_docs?include_docs=true&limit=10000")
+    r = requests.get("http://localhost:5984/registry_dependencies/_all_docs?include_docs=true&limit=20000")
     print "Done"
     return r.json()["rows"]
 
