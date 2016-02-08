@@ -1,14 +1,6 @@
 import pystache
-import semantic_version
-import unittest
-import re
-from Naked.toolshed.shell import muterun_js
-import json
-import pyfscache
 from multiprocessing import Pool
 import requests
-import pickle
-#from progressbar import ProgressBar, SimpleProgress
 
 
 ## Template for a item in a cudf file
@@ -24,7 +16,7 @@ def get_all_docs():
     Get all the documents/packages of npm
     """
     print "Getting all documents..."
-    r = requests.get("http://localhost:5984/registry_dependencies/_all_docs?include_docs=true&limit=1000")
+    r = requests.get("http://localhost:5984/registry_dependencies/_all_docs?include_docs=true&limit=10000")
     print "Done"
     return r.json()["rows"]
 
@@ -38,23 +30,6 @@ def generate_table_versions():
             package[r["id"]][doc["version"]] = doc["number"]
     return package
 
-
-
-
-def generate_cudf(table, packages):
-    cudf_txt = ""
-    for p in packages:
-        p = p["doc"]
-        versions = p["value"].keys()
-        for v in versions:
-            deps = p["value"][v]
-            cudf_deps = generate_deps_cudf(deps)
-            cudf_txt = cudf_txt + pystache.render(cudf, {
-                'name': p["_id"],
-                'version': table[p["_id"]][v],
-                'dependencies': cudf_deps
-                }) + "\n"
-    return cudf_txt
 
 def generate_deps_cudf(deps):
     dependencies = ""
@@ -70,7 +45,7 @@ def generate_deps_cudf(deps):
                     dependencies = dependencies + versions
         except TypeError:
             # This is not a available version 
-            versions = map(lambda version: d + "-" + fix_url(str(version)),  deps[d])
+            versions = map(lambda version: fix_url(d) + fix_url(str(version)),  deps[d])
             versions =  " | ".join(versions)
             if len(versions) != 0:
                 if i != total:
@@ -79,9 +54,42 @@ def generate_deps_cudf(deps):
                     dependencies = dependencies + versions
     return dependencies
 
+
+
+def run(p):
+    cudf_txt = ""
+    p = p["doc"]
+    versions = p["value"].keys()
+    for v in versions:
+        deps = p["value"][v]
+        cudf_deps = generate_deps_cudf(deps)
+        cudf_txt = cudf_txt + pystache.render(cudf, {
+            'name': p["_id"],
+            'version': table[p["_id"]][v],
+            'dependencies': cudf_deps
+            }) + "\n"
+    return cudf_txt
+
+def generate_cudf(table, packages):
+    print "Generating deps"
+    pool = Pool(4)
+    results = pool.map(run, packages)
+    pool = None
+    print "Mergin results"
+    cudf_txt = "".join(results)
+    return cudf_txt
+
+
 def fix_url(url):
     url = url.replace("^", "").replace("~", "").replace("/", "").replace("@", "")
     url = url.replace("*", "any")
+    url = url.replace(">=", "") # Esto es solo para un error en swign=
+    url = url.replace("=", "")
+    url = url.replace("#", "")
+    url = url.replace(" ", "")
+    url = url.replace("-", "")
+    url = url.replace("{}", "")
+    url = url.replace("<2", "")
     return url
 
 

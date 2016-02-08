@@ -68,7 +68,7 @@ sequence
     .then(function(next, table){
         console.log("Generating dependencies");
         var cache = {};
-        registry.view("deps", "all?limit=100000", function(err, body){
+        registry.view("deps", "all?limit=50000&skip=150000", function(err, body){
 
             function iterator(package, callback){
                 var versions = [];
@@ -124,6 +124,9 @@ sequence
                         value: result
                     };
                     registry_dependencies.insert(doc, function(err, body){
+                        if(err){
+                            console.log(err);
+                        }
                         callback();
                     });
                 });
