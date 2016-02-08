@@ -66,17 +66,17 @@ sequence
             //}
         //});
     //})
-    .then(function(next){
-        registry_fixed = nano.db.use("registry_fixed");
-        registry = nano.db.use("registry");
-        nano.db.destroy('registry_fixed', function(){
-            nano.db.create('registry_fixed');
-            nano.db.destroy('registry_dependencies', function(){
-                nano.db.create('registry_dependencies');
-                next();
-            });
-        });
-    })
+    //.then(function(next){
+        //registry_fixed = nano.db.use("registry_fixed");
+        //registry = nano.db.use("registry");
+        //nano.db.destroy('registry_fixed', function(){
+            //nano.db.create('registry_fixed');
+            //nano.db.destroy('registry_dependencies', function(){
+                //nano.db.create('registry_dependencies');
+                //next();
+            //});
+        //});
+    //})
     .then(function(next){
         registry.get('_design/versions', next);
     })

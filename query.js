@@ -12,6 +12,12 @@ var registry_dependencies = nano.db.use("registry_dependencies");
 
 var sequence = Futures.sequence();
 
+function fix_version(version){
+    var to_check = "x@" + version;
+    return npa(to_check).spec;
+}
+
+
 sequence
     //.then(function(next){
         //registry.view("versions", "all", function(err, body){
@@ -22,9 +28,16 @@ sequence
         //console.log("Fixing available versions");
         //var rows = _.map(body.rows, function(doc){
             //var versions = _.map(doc["value"], function(version){
-                //var to_check = "x@" + version;
-                //return npa(to_check).spec;
+                //return fix_version(version);
             //});
+
+            //for(var i = 0; i < versions.length; i++){
+                //var element = versions[i];
+                //versions[i] = {};
+                //versions[i]["number"]  = i + 1;
+                //versions[i]["version"] = element;
+            //}
+
             //doc["value"] = versions;
             //doc["_id"]   = doc["id"];
             //doc["name"] = doc["id"];
@@ -33,6 +46,7 @@ sequence
         //next(rows);
     //})
     //.then(function(next, docs){
+        //console.log("Storing versions");
         //var l = {docs : docs};
         //registry_fixed.bulk(l, function(err, body){
             //docs = null;
@@ -54,7 +68,7 @@ sequence
     .then(function(next, table){
         console.log("Generating dependencies");
         var cache = {};
-        registry.view("deps", "all?limit=20000", function(err, body){
+        registry.view("deps", "all?limit=100000", function(err, body){
 
             function iterator(package, callback){
                 var versions = [];
@@ -75,21 +89,23 @@ sequence
                                 deps_satisfied[dep] = cache[dep][request];
                             }else{
                                 if(table[dep] !== undefined){
-                                    var satisfies = _.filter(table[dep], function(x){ return semver.satisfies(x, request)});
+                                    var satisfies = _.filter(table[dep], function(x){ return semver.satisfies(x["version"], request)});
                                     cache[dep][request] = satisfies;
                                     deps_satisfied[dep] = satisfies;
                                 }else{
-                                    deps_satisfied[dep] = [];
+                                    deps_satisfied[dep] = [request];
                                 }
                             }
                         }else{
                             cache[dep] = {};
                             if(table[dep] !== undefined){
-                                var satisfies = _.filter(table[dep], function(x){ return semver.satisfies(x, request)});
+                                var satisfies = _.filter(table[dep], function(x){ return semver.satisfies(x["version"], request)});
                                 cache[dep][request] = satisfies;
                                 deps_satisfied[dep] = satisfies;
                             }else{
-                                deps_satisfied[dep] = [];
+                                // no hay una dependencia en el repo, entonces
+                                // vamos a agregarlo igual asi como esta
+                                deps_satisfied[dep] = [request];
                             }
                         }
 
@@ -97,7 +113,7 @@ sequence
                     }
 
                     async.reduce(deps, {}, iterator, function(err, result){
-                        versions[version] = result;
+                        versions[fix_version(version)] = result;
                         callback(null, versions);
                     });
                 }
@@ -112,7 +128,6 @@ sequence
                     });
                 });
             }
-
             async.map(body.rows, iterator);
         });
     })
@@ -120,5 +135,3 @@ sequence
         console.log("Listo");
         next();
     });
-
-
