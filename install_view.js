@@ -27,6 +27,29 @@ var versions = {
 };
 
 
+var scoped_packages = {
+    "_id": "_design/scoped",
+    "language": "javascript",
+    "views": {
+        "all": {
+            "map": "function(doc){" +
+                "var value = doc['value'];"+
+                "for(var version in value){"+
+                    "for(var dep in value[version]){"+
+                        "if(dep[0] === '@'){"+
+                            "emit(null, dep);"+
+                        "}"+
+                    "}"+
+                "}"+
+            "}"
+        }
+    }
+};
+
+
+
+
+
 var dependencies_version = {
     "_id": "_design/deps",
     "language": "javascript",
@@ -48,7 +71,9 @@ var dependencies_version = {
 };
 
 
-var registry = null;
+var registry = nano.db.use("registry_plus_scoped");
+var registry_dependencies = nano.db.use("registry_dependencies");
+//var registry = null;
 var sequence = Futures.sequence();
 
 
@@ -77,15 +102,60 @@ sequence
             //});
         //});
     //})
+    //
+    //.then(function(next){
+        //registry.get('_design/versions', next);
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //next(null, null);
+        //}else{
+            //if(body){
+                //registry.destroy("_design/versions", body["_rev"], next);
+            //}else{
+                //next(null, null);
+            //}
+        //}
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //console.log(err);
+        //}else{
+            //registry.insert(versions, next);
+        //}
+    //})
+    ////
+    //.then(function(next){
+        //registry.get('_design/deps', next);
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //next(null, null);
+        //}else{
+            //if(body){
+                //registry.destroy("_design/deps", body["_rev"], next);
+            //}else{
+                //next(null, null);
+            //}
+        //}
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //console.log(err);
+        //}else{
+            //registry.insert(dependencies_version, next);
+        //}
+    //})
+    //
     .then(function(next){
-        registry.get('_design/versions', next);
+        registry_dependencies.get('_design/scoped', next);
     })
     .then(function(next, err, body){
         if(err){
             next(null, null);
         }else{
             if(body){
-                registry.destroy("_design/versions", body["_rev"], next);
+                registry_dependencies.destroy("_design/scoped", body["_rev"], next);
             }else{
                 next(null, null);
             }
@@ -95,30 +165,10 @@ sequence
         if(err){
             console.log(err);
         }else{
-            registry.insert(versions, next);
+            registry_dependencies.insert(scoped_packages, next);
         }
     })
-    .then(function(next){
-        registry.get('_design/deps', next);
-    })
-    .then(function(next, err, body){
-        if(err){
-            next(null, null);
-        }else{
-            if(body){
-                registry.destroy("_design/deps", body["_rev"], next);
-            }else{
-                next(null, null);
-            }
-        }
-    })
-    .then(function(next, err, body){
-        if(err){
-            console.log(err);
-        }else{
-            registry.insert(dependencies_version, next);
-        }
-    })
+    //
     .then(function(next, err, body){
         if(err){
             console.log(err);
