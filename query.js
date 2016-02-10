@@ -29,15 +29,19 @@ sequence
         //// of versions of NPM.
         //console.log("Fixing available versions");
         //var rows = _.map(body.rows, function(doc){
-            //var versions = _.map(doc["value"], function(version){
-                //return fix_version(version);
+            //var versions = _.map(doc["value"], function(value){
+                //var version = value["version"];
+                //value["version"] = fix_version(version);
+                //return value;
             //});
+
 
             //for(var i = 0; i < versions.length; i++){
                 //var element = versions[i];
                 //versions[i] = {};
                 //versions[i]["number"]  = i + 1;
-                //versions[i]["version"] = element;
+                //versions[i]["version"] = element["version"];
+                //versions[i]["license"] = element["license"];
             //}
 
             //doc["value"] = versions;
@@ -60,12 +64,15 @@ sequence
         // we get all the packages in registry fixed, the list of available
         // packages with the fixed version that can be readed by semver.
         // We will use this to get the available versions of a package
-        registry_fixed.list({include_docs: true}, next);
+        registry_fixed.list({include_docs: true, limit: 2}, next);
     })
     .then(function(next, err, body){
         // We get the documents from the database.
         function iter(acc, x){
-            acc[x["id"]] = x["doc"]["value"];
+            var y = _.map(x["doc"]["value"], function(version){
+                return version["version"];
+            });
+            acc[x["id"]] = y;
             return acc;
         }
         var table = _.reduce(body.rows, iter, {});
