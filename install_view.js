@@ -17,7 +17,14 @@ var versions = {
                     "var versions = doc[\"versions\"];"+
                     "var l = [];"+
                     "for(var key in versions){"+
-                        "l.push(key);"+
+                        "var element = {};"+
+                        "element['version'] = key;"+
+                        "if(versions[key]['license']){"+
+                            "element['license'] = versions[key]['license'];"+
+                        "}else{"+
+                            "element['license'] = 'none';"+
+                        "}"+
+                        "l.push(element);"+
                     "}"+
                     "emit(doc[\"name\"], l);"+
                 "}"+
@@ -108,38 +115,15 @@ sequence
     //})
     //
     //**********  VERSIONS **************
-    //.then(function(next){
-        //registry.get('_design/versions', next);
-    //})
-    //.then(function(next, err, body){
-        //if(err){
-            //next(null, null);
-        //}else{
-            //if(body){
-                //registry.destroy("_design/versions", body["_rev"], next);
-            //}else{
-                //next(null, null);
-            //}
-        //}
-    //})
-    //.then(function(next, err, body){
-        //if(err){
-            //console.log(err);
-        //}else{
-            //registry.insert(versions, next);
-        //}
-    //})
-    //*********** DEPS ************
     .then(function(next){
-        registry.get('_design/deps', next);
+        registry.get('_design/versions', next);
     })
     .then(function(next, err, body){
         if(err){
             next(null, null);
         }else{
             if(body){
-                console.log("Eliminando deps");
-                registry.destroy("_design/deps", body["_rev"], next);
+                registry.destroy("_design/versions", body["_rev"], next);
             }else{
                 next(null, null);
             }
@@ -149,9 +133,32 @@ sequence
         if(err){
             console.log(err);
         }else{
-            registry.insert(dependencies_version, next);
+            registry.insert(versions, next);
         }
     })
+    //*********** DEPS ************
+    //.then(function(next){
+        //registry.get('_design/deps', next);
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //next(null, null);
+        //}else{
+            //if(body){
+                //console.log("Eliminando deps");
+                //registry.destroy("_design/deps", body["_rev"], next);
+            //}else{
+                //next(null, null);
+            //}
+        //}
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //console.log(err);
+        //}else{
+            //registry.insert(dependencies_version, next);
+        //}
+    //})
     //************** SCOPED *****************
     //.then(function(next){
         //registry_dependencies.get('_design/scoped', next);
