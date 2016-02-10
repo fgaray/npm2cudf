@@ -54,6 +54,10 @@ def generate_deps_cudf(deps):
             versions = map(lambda version: fix_url(d) + fix_url(str(version)),  deps[d])
             if is_scoped(d) or is_github(d):
                 extras = extras + versions
+            for v in versions:
+                # The github url can also be in the version field
+                if is_github(v):
+                    extras.append(fix_url(d) + fix_url(str(v)))
             versions =  " | ".join(versions)
             if len(versions) != 0:
                 if i != total:
@@ -154,7 +158,6 @@ def fix_url(url):
     url = url.replace("=", "equals")  # Esto es solo para un error en swign=
     url = url.replace("#", "hash")
     url = url.replace(" ", "space")
-    url = url.replace("-", "dash")
     url = url.replace("{}", "")
     url = url.replace("<2", "")
     url = url.replace("<", "lt")
@@ -190,6 +193,7 @@ if __name__ == "__main__":
     f = codecs.open("npm.cudf", "w", encoding = "utf-8")
     all_extras = []
     while i <= 250000:
+    # while i <= 10000:
         print i
         packages = get_all_docs(step, i)
         cudf_txt, pool, extras = generate_cudf(table, packages, pool)
