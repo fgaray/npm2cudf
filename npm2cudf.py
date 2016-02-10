@@ -4,6 +4,13 @@ from multiprocessing import Pool
 import requests
 import codecs
 
+preamble = """
+preamble: 
+property: number: string
+
+
+"""
+
 
 ## Template for a item in a cudf file
 cudf = """package: {{name}}
@@ -11,6 +18,7 @@ version: {{version}}
 {{#dependencies}}
 depends: {{dependencies}}
 {{/dependencies}}
+number: {{number}}
 """
 
 
@@ -54,7 +62,7 @@ def generate_deps_cudf(deps):
             versions = map(lambda version: fix_url(d) + fix_url(str(version)),  deps[d])
             if is_scoped(d) or is_github(d):
                 extras = extras + versions
-            for v in versions:
+            for v in deps[d]:
                 # The github url can also be in the version field
                 if is_github(v):
                     extras.append(fix_url(d) + fix_url(str(v)))
@@ -191,6 +199,7 @@ if __name__ == "__main__":
     step = 10000
     pool = None
     f = codecs.open("npm.cudf", "w", encoding = "utf-8")
+    f.write(preamble)
     all_extras = []
     while i <= 250000:
     # while i <= 10000:
@@ -208,5 +217,4 @@ if __name__ == "__main__":
             'version': 1,
             }) + "\n"
     f.write(cudf_txt)
-    print all_extras
     f.close()
