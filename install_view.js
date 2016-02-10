@@ -61,7 +61,11 @@ var dependencies_version = {
                     "var d = {};"+
                     "for(var key in versions){"+
                         'var deps = versions[key]["dependencies"];' +
-                        "d[key] = deps;"+
+                        'if(deps !== undefined){'+
+                            "d[key] = deps;"+
+                        '}else{'+
+                            'd[key] = [];'+
+                        '}'+
                     "}"+
                     "emit(doc[\"name\"], d);"+
                 "}"+
@@ -71,7 +75,7 @@ var dependencies_version = {
 };
 
 
-var registry = nano.db.use("registry_plus_scoped");
+var registry = nano.db.use("registry");
 var registry_dependencies = nano.db.use("registry_dependencies");
 //var registry = null;
 var sequence = Futures.sequence();
@@ -103,6 +107,7 @@ sequence
         //});
     //})
     //
+    //**********  VERSIONS **************
     //.then(function(next){
         //registry.get('_design/versions', next);
     //})
@@ -124,38 +129,17 @@ sequence
             //registry.insert(versions, next);
         //}
     //})
-    ////
-    //.then(function(next){
-        //registry.get('_design/deps', next);
-    //})
-    //.then(function(next, err, body){
-        //if(err){
-            //next(null, null);
-        //}else{
-            //if(body){
-                //registry.destroy("_design/deps", body["_rev"], next);
-            //}else{
-                //next(null, null);
-            //}
-        //}
-    //})
-    //.then(function(next, err, body){
-        //if(err){
-            //console.log(err);
-        //}else{
-            //registry.insert(dependencies_version, next);
-        //}
-    //})
-    //
+    //*********** DEPS ************
     .then(function(next){
-        registry_dependencies.get('_design/scoped', next);
+        registry.get('_design/deps', next);
     })
     .then(function(next, err, body){
         if(err){
             next(null, null);
         }else{
             if(body){
-                registry_dependencies.destroy("_design/scoped", body["_rev"], next);
+                console.log("Eliminando deps");
+                registry.destroy("_design/deps", body["_rev"], next);
             }else{
                 next(null, null);
             }
@@ -165,14 +149,36 @@ sequence
         if(err){
             console.log(err);
         }else{
-            registry_dependencies.insert(scoped_packages, next);
+            registry.insert(dependencies_version, next);
         }
     })
+    //************** SCOPED *****************
+    //.then(function(next){
+        //registry_dependencies.get('_design/scoped', next);
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //next(null, null);
+        //}else{
+            //if(body){
+                //registry_dependencies.destroy("_design/scoped", body["_rev"], next);
+            //}else{
+                //next(null, null);
+            //}
+        //}
+    //})
+    //.then(function(next, err, body){
+        //if(err){
+            //console.log(err);
+        //}else{
+            //registry_dependencies.insert(scoped_packages, next);
+        //}
+    //})
     //
-    .then(function(next, err, body){
-        if(err){
-            console.log(err);
-        }else{
-            console.log("Installed");
-        }
-    })
+    //.then(function(next, err, body){
+        //if(err){
+            //console.log(err);
+        //}else{
+            //console.log("Installed");
+        //}
+    //})
