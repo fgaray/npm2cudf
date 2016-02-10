@@ -19,42 +19,42 @@ function fix_version(version){
 
 
 sequence
-    .then(function(next){
-        registry.view("versions", "all", function(err, body){
-            next(body);
-        });
-    })
-    .then(function(next, body){
-        // Sice some versions in NPM are bad, we can fix them using the parser
-        // of versions of NPM.
-        console.log("Fixing available versions");
-        var rows = _.map(body.rows, function(doc){
-            var versions = _.map(doc["value"], function(version){
-                return fix_version(version);
-            });
+    //.then(function(next){
+        //registry.view("versions", "all", function(err, body){
+            //next(body);
+        //});
+    //})
+    //.then(function(next, body){
+        //// Sice some versions in NPM are bad, we can fix them using the parser
+        //// of versions of NPM.
+        //console.log("Fixing available versions");
+        //var rows = _.map(body.rows, function(doc){
+            //var versions = _.map(doc["value"], function(version){
+                //return fix_version(version);
+            //});
 
-            for(var i = 0; i < versions.length; i++){
-                var element = versions[i];
-                versions[i] = {};
-                versions[i]["number"]  = i + 1;
-                versions[i]["version"] = element;
-            }
+            //for(var i = 0; i < versions.length; i++){
+                //var element = versions[i];
+                //versions[i] = {};
+                //versions[i]["number"]  = i + 1;
+                //versions[i]["version"] = element;
+            //}
 
-            doc["value"] = versions;
-            doc["_id"]   = doc["id"];
-            doc["name"] = doc["id"];
-            return doc;
-        });
-        next(rows);
-    })
-    .then(function(next, docs){
-        console.log("Storing versions");
-        var l = {docs : docs};
-        registry_fixed.bulk(l, function(err, body){
-            docs = null;
-            next();
-        });
-    })
+            //doc["value"] = versions;
+            //doc["_id"]   = doc["id"];
+            //doc["name"] = doc["id"];
+            //return doc;
+        //});
+        //next(rows);
+    //})
+    //.then(function(next, docs){
+        //console.log("Storing versions");
+        //var l = {docs : docs};
+        //registry_fixed.bulk(l, function(err, body){
+            //docs = null;
+            //next();
+        //});
+    //})
     //here is the important part
     .then(function(next){
         // we get all the packages in registry fixed, the list of available
@@ -83,13 +83,15 @@ sequence
         // We also use a cache. If a package request the same versions that
         // another, we use that.
         var cache = {};
-        registry.view("deps", "all?limit=50000&skip=250000", function(err, body){
+        //registry.view("deps", "all?limit=50000&skip=250000", function(err, body){
+        registry.view("deps", "all?limit=25000&skip=225000", function(err, body){
 
             function iterator(package, callback){
                 var versions = [];
                 for(var version in package["value"]){
                     versions.push(version);
                 }
+
 
                 function iterator(versions, version, callback){
                     var deps = [];
