@@ -7,6 +7,7 @@ import codecs
 preamble = """
 preamble: 
 property: number: string
+property: license: string
 
 
 """
@@ -19,6 +20,7 @@ version: {{version}}
 depends: {{dependencies}}
 {{/dependencies}}
 number: {{number}}
+license: {{license}}
 """
 
 
@@ -39,7 +41,10 @@ def generate_table_versions():
     for r in r.json()["rows"]:
         package[r["id"]] = {}
         for doc in r["doc"]["value"]:
-            package[r["id"]][doc["version"]] = doc["number"]
+            package[r["id"]][doc["version"]] = {
+                    "number": doc["number"]
+                    , "license": doc["license"]
+                    }
     return package
 
 
@@ -124,7 +129,8 @@ def run(p):
         all_extras = all_extras + extras
         cudf_txt = cudf_txt + pystache.render(cudf, {
             'name': fix_name(p["_id"]),
-            'version': table[p["_id"]][v],
+            'version': table[p["_id"]][v]["number"],
+            'license': table[p["_id"]][v]["license"],
             'dependencies': cudf_deps,
             'number': v
             }) + "\n"
@@ -137,8 +143,9 @@ def fix_name(name):
 def generate_cudf(table, packages, pool = None):
     print "Generating deps"
     if not pool:
-        pool = Pool(4)
-    results = pool.map(run, packages)
+        #pool = Pool(4)
+        pass
+    results = map(run, packages)
     try:
         results, extras = zip(*results)
     except:
@@ -208,6 +215,7 @@ if __name__ == "__main__":
         cudf_txt, pool, extras = generate_cudf(table, packages, pool)
         all_extras = all_extras + extras
         f.write(cudf_txt)
+        cudf_txt = ""
         i = i + step
     cudf_txt = ""
     all_extras = list(set(concat(all_extras)))
@@ -215,6 +223,8 @@ if __name__ == "__main__":
         cudf_txt = cudf_txt + pystache.render(cudf, {
             'name': extra, 
             'version': 1,
+            'number': 'not-available',
+            'license': 'not-available'
             }) + "\n"
     f.write(cudf_txt)
     f.close()
