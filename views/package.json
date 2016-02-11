@@ -1,0 +1,14 @@
+{
+  "name": "views",
+  "version": "1.0.0",
+  "description": "A set of views to generate metadata from a couchdb replica of the npm registry",
+  "main": "install_views.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies":{
+    "nano": "6.2.x"
+  },
+  "author": "Felipe Garay",
+  "license": "GPL-3.0"
+}
