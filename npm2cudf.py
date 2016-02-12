@@ -36,11 +36,11 @@ def get_all_docs(step, index):
 
 def generate_table_versions():
     print "Generating table"
-    r = requests.get("http://localhost:5984/registry_fixed/_all_docs?include_docs=true")
+    r = requests.get("http://localhost:5984/registry/_design/versions/_view/all")
     package = {}
     for r in r.json()["rows"]:
         package[r["id"]] = {}
-        for doc in r["doc"]["value"]:
+        for doc in r["value"]:
             package[r["id"]][doc["version"]] = {
                     "number": doc["number"]
                     , "license": doc["license"]
@@ -55,14 +55,15 @@ def generate_deps_cudf(deps):
     extras = []
     for i, d in enumerate(deps.keys()):
         try:
-            versions = map(lambda version: fix_name(d) + " = " + str(version["number"]),  deps[d])
+            number_deps = map(lambda version: table[d][version]["number"], deps[d])
+            versions = map(lambda version: fix_name(d) + " = " + str(version), number_deps)
             versions =  " | ".join(versions)
             if len(versions) != 0:
                 if i != total:
                     dependencies = dependencies + versions + ", "
                 else:
                     dependencies = dependencies + versions
-        except TypeError:
+        except KeyError:
             # There is not a available version 
             versions = map(lambda version: fix_url(d) + fix_url(str(version)),  deps[d])
             if is_scoped(d) or is_github(d):
@@ -203,7 +204,7 @@ def concat(l):
 if __name__ == "__main__":
     table = generate_table_versions()
     i = 0
-    step = 10000
+    step = 20000
     pool = None
     f = codecs.open("npm.cudf", "w", encoding = "utf-8")
     f.write(preamble)

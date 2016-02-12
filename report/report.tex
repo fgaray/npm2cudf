@@ -1,6 +1,7 @@
-\documentclass[letterpaper,12pt]{article}
+\documentclass[letterpaper,12pt]{report}
 
 \usepackage[letterpaper]{geometry}
+\usepackage{minted}
 
 \title{Report}
 \author{Felipe Garay}
@@ -8,6 +9,38 @@
 \begin{document}
 \maketitle
 \newpage
+\tableofcontents
+\newpage
+
+
+\chapter{Introduction}
+
+
+
+
+\section{NPM package repository}
+
+The NPM (Node Package Manager) is the de factor package manager for the nodejs
+ecosystem. Users use a centralized server called registry where all the public
+packages' metadata is stored using a CouchDB database. A public replica of this
+database can be found in \url{https://skimdb.npmjs.com/}.
+
+Since CouchDB allows easy replication, we can ask a local database to replicate
+the registry of NPM and even to use a continous replication, that means that
+every time there is a change in the master database, the replica will be update
+with them.
+
+This replication can be accomplish using the interface of CouchDB, pointing the
+source to \url{https://skimdb.npmjs.com/} and the destination to ``registry''.
+
+Notice that there is a entry in the database that prevents the replication of
+more packages once is copied to the local database. This document can be
+identified by the id ``\_design/app'' and it is sufficient to delete it and
+resume the replication.
+
+At the moment of the writing of this document the database has a size of 1.3 GB
+with 233593	unique documents/packages.
+
 
 
 \end{document}

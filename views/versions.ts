@@ -1,3 +1,6 @@
+/// <reference path="couchdb_common.ts"/>
+
+
 // This is the function of the view _design/versions
 // It is used to normalize the versions on the database so it can be used by
 // semver
@@ -6,35 +9,7 @@
 var require: Function;
 var npa = require('npm-package-arg');
 
-
-type Dependencies = {[dependency: string]: string}
-type Versions = {[version: string]: Version};
-
-
-interface Version{
-    name: string;
-    version: string;
-    description: string;
-    dependencies: Dependencies;
-    license?: string;
-}
-
-
-interface Doc{
-    _id: string;
-    _rev: string;
-    name: string;
-    description: string;
-    versions: Versions;
-}
-
-
 type VersionsOutput = {version: string, license: string}[]
-
-declare var emit: Function;
-declare var doc_couchdb: Doc;
-
-
 
 function fix_version(version: string){
     var to_check = "x@" + version;
@@ -57,7 +32,7 @@ function map(){
         }
 
         var output = {
-            version: key,
+            version: fix_version(key),
             license: license,
             number: index + 1
         };
@@ -65,7 +40,7 @@ function map(){
         index++;
     }
 
-    emit(doc, only_versions);
+    emit(doc["_id"], only_versions);
 }
 
 map();

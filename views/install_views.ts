@@ -1,13 +1,17 @@
-/**
- * All views should not use the word map
- * */
-
+/// <reference path="couchdb_common.ts"/>
 
 declare var require: any;
 declare var fs: any;
 
+
 var nano = require('nano')("http://127.0.0.1:5984");
 var fs   = require('fs');
+
+
+
+declare var emit: Function;
+declare var doc_couchdb: Doc;
+
 
 interface Database{
     insert: Function;
@@ -15,10 +19,6 @@ interface Database{
     destroy: Function;
     get: Function;
 }
-
-
-
-var registry: Database = nano.db.use("registry");
 
 
 function asyncInsert(db: Database, doc: any){
@@ -55,10 +55,18 @@ interface View {
     views: {[view: string]: {[name: string]: string}}
 }
 
+
+
+
+
+
+var registry: Database = nano.db.use("registry");
+
 declare var process: any;
 
 
 /************** The Program ***************************************************/
+
 
 var versions_view: View = {
     "_id": "_design/versions",
@@ -71,10 +79,23 @@ var versions_view: View = {
 };
 
 
+
+var deps_view: View = {
+    "_id": "_design/deps",
+    "language": "javascript",
+    "views": {
+        "all": {
+            "map": "deps.js"
+        }
+    }
+};
+
+
+// The views to be installed
 var all_views: View[] = [
         versions_view
+        //deps_view
     ];
-
 
 
 function add_wrap_function(program: string){
@@ -84,6 +105,7 @@ function add_wrap_function(program: string){
 
 /***************************** MAIN *******************************************/
 async function main(){
+    console.log("Installing...");
     var all_views_files: View[] = [];
 
     // we will read all the views from files 
