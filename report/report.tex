@@ -2,6 +2,7 @@
 
 \usepackage[letterpaper]{geometry}
 \usepackage{minted}
+\usepackage{url}
 
 \title{Report}
 \author{Felipe Garay}
@@ -40,6 +41,76 @@ resume the replication.
 
 At the moment of the writing of this document the database has a size of 1.3 GB
 with 233593	unique documents/packages.
+
+\section{Structure of a NPM package}
+
+
+NPM packages are stored in the registry in JSON. A typical document for a
+package in the database has the following fields:
+
+\begin{itemize}
+    \item \textbf{\_id}: An unique string id of the package, it is the same that the
+        name.
+    \item \textbf{name}: The name of the package.
+    \item \textbf{description}: A short description of the package.
+    \item \textbf{dist-tags}: A JSON dictionary with named tags pointing to versions.
+        For example ``latest: 13.0.0''.
+    \item \textbf{versions}: A JSON dictionary where each key is a version of the
+        package with the following structure:
+        \begin{itemize}
+            \item \textbf{\_id}: The concatenation of the ``\_id'' of the package
+                with the version.
+            \item \textbf{name}: The name of the package in this version. It is
+                always the same that the name of the package.
+            \item  \textbf{version}: Is the same string that in the key of the
+                dictionary of ``versions''.
+            \item \textbf{description}: The description in this version of the
+                package.
+            \item \textbf{main}: The Javascript file use as the entry of the program.
+                If it is a library, this field is not present.
+            \item \textbf{bin}
+            \item \textbf{repository}: A JSON dictionary with the information of
+                the repository of the proyect:
+                \begin{itemize}
+                    \item \textbf{type}: A string with the type of the
+                        repository. For example ``git''.
+                    \item \textbf{url}: The url for cloning the repository.
+                \end{itemize}
+            \item \textbf{keywords}: A list of keywords to easily find the
+                package in the registry.
+            \item \textbf{dependencies}: A JSON dictionary where each key if the
+                name of the dependency and each value is a semver version (with
+                the node's style) or a git URL.
+            \item \textbf{devDependencies}: Dependencies needed to run tests or
+                in general modify the library.
+            \item \textbf{author}: A JSON dictionary with the following keys:
+                \begin{itemize}
+                    \item \textbf{name}: The name of the author.
+                    \item \textbf{email}: The email of the author.
+                    \item \textbf{url}: The URL of the webpage of the author
+                        (optionl).
+                \end{itemize}
+            \item \textbf{license}: A name of the license of the code in this
+                version.
+            \item \textbf{engine}: A list of string where each one is a
+                constraint related to the version of node required to run the
+                program or library. For example: ``node $>=$0.2.0''.
+            \item \textbf{scripts}:
+            \item \textbf{dist}: A JSON dictionary with information about the
+                source code of the pacakge:
+                \begin{itemize}
+                    \item \textbf{shasum}: The hash of the file to be
+                        downloaded.
+                    \item \textbf{tarball}: A tgz file with the code of the
+                        version.
+                \end{itemize}
+            \item \textbf{time}: A dictionary with the timestamp of the
+                versions.
+            \item \textbf{users}
+            \item \textbf{readme}: The readme to be show to the user in the
+                webpage of the NPM registry.
+        \end{itemize}
+\end{itemize}
 
 
 
