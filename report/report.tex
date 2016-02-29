@@ -17,9 +17,6 @@
 
 \chapter{Introduction}
 
-
-
-
 \section{NPM package repository}
 
 The NPM (Node Package Manager) is the de factor package manager for the nodejs
@@ -159,6 +156,315 @@ npm2cudf.py.
 
 \subsection{Views}
 
+``install\_views.ts`` can install the views directly into CouchDB. The advantage
+of using views is that when a new package is added to the registry 
+
+\subsubsection{versions.ts}
+
+This view takes every document from the database and apply a map function to fix
+and extract the avalaible versions and license of the packages and numerate
+them. For example, a package with the following json description:
+
+\begin{minted}{json}
+{
+   "_id": "0.workspace",
+   "_rev": "19-511dee174891b0ce3b37e11972eda5da",
+   "name": "0.workspace",
+   "description": "**Status: DEV**",
+   "dist-tags": {
+       "latest": "0.1.1"
+   },
+   "versions": {
+       "0.0.0": {
+       },
+       "0.0.1": {
+       },
+       "0.0.2": {
+       }
+   }
+}
+\end{minted}
+
+Will generate this document:
+
+\begin{minted}{json}
+[
+  {version: "0.0.0", license: "not defined", number: 1},
+  {version: "0.0.1", license: "not defined", number: 2}, 
+  {version: "0.0.2", license: "not defined", number: 3}
+]
+\end{minted}
+
+This view also fixes some versions with a bad syntax. Some packages have errors
+in the versions, for example, ``1.0.2beta'' with the module ``npm-package-arg''
+can fix.
+
+In order to be able to use this module inside CouchDB, we had to create a big
+JavsScript file using browserify to merge all the code in only one source file.
+
+This view will be installer in ``registry/\_versions''.
+
+\subsubsection{deps.ts}
+
+This view creates a subsets of the documents in ``registry'' in order of having
+a easier and small dataset of the dependencies of a package in each version.
+
+For a package in the registry, generates a json dictionary where each key is a
+version and each value is another dictionary with the dependencies. For example,
+from the following package:
+
+\begin{minted}{json}
+{
+   "_id": "0.workspace",
+   "_rev": "19-511dee174891b0ce3b37e11972eda5da",
+   "name": "0.workspace",
+   "description": "**Status: DEV**",
+   "dist-tags": {
+       "latest": "0.1.1"
+   },
+   "versions": {
+       "0.0.0": {
+       },
+       "0.0.1": {
+         "dependencies": {
+           "bash.origin": "^0.1.26"
+         }
+       },
+       "0.0.2": {
+         "dependencies": {
+           "bash.origin": "^0.1.26"
+         }
+       }
+   }
+}
+\end{minted}
+
+This view will generate this:
+
+\begin{minted}{json}
+{
+  "0.0.0": [],
+  "0.0.1": {"bash.origin": "^0.1.26"},
+  "0.0.2": {"bash.origin": "^0.1.26"}
+}
+\end{minted}
+
+
+\subsection{Dependencies generator}
+
+``deps\_generator.ts'' creates a new database where each dependency of a package
+is replaced by the versions that can satisfy that constraint.
+
+For example, from the following json:
+
+\begin{minted}{json}
+{
+   "_id": "0.workspace",
+   "_rev": "19-511dee174891b0ce3b37e11972eda5da",
+   "name": "0.workspace",
+   "description": "**Status: DEV**",
+   "dist-tags": {
+       "latest": "0.1.1"
+   },
+   "versions": {
+       "0.0.0": {
+       },
+       "0.0.1": {
+         "dependencies": {
+           "bash.origin": "^0.1.26"
+         }
+       },
+       "0.0.2": {
+         "dependencies": {
+           "bash.origin": "^0.1.26"
+         }
+       }
+   }
+}
+\end{minted}
+
+We get:
+
+\begin{minted}{json}
+{
+   "_id": "0.workspace",
+   "_rev": "1-d7b59e993b1528d279774d3eb8e62969",
+   "value": {
+       "0.0.0": {
+       },
+       "0.0.1": {
+           "bash.origin": [
+               "0.1.26",
+               "0.1.27",
+               "0.1.28",
+               "0.1.29",
+               "0.1.30",
+               "0.1.31"
+           ]
+       },
+       "0.0.2": {
+           "bash.origin": [
+               "0.1.26",
+               "0.1.27",
+               "0.1.28",
+               "0.1.29",
+               "0.1.30",
+               "0.1.31"
+           ]
+       },
+       "0.0.3": {
+           "bash.origin": [
+               "0.1.26",
+               "0.1.27",
+               "0.1.28",
+               "0.1.29",
+               "0.1.30",
+               "0.1.31"
+           ]
+       }
+  }
+}
+\end{minted}
+
+This processing is done in batches of 5000 packages to prevent out-of-memory
+execptions.
+
+For the range evaluation we use the semver module
+\footnote{https://github.com/npm/node-semver} and a cache to speedup the
+calculation of the ranges.
+
+
+All the generated json are stored in a second database called
+``registry\_dependencies''.
+
+
+
+\subsection{CUDF file generator}
+
+The generation of the CUDF file in done in npm2cudf.py, a python program that
+takes the data generated in the views and in ``deps\_generator.ts''.
+
+This program iterates over all the packages in ``registry\_dependencies'' and
+for each version it generates a CUDF entry with the dependencies tranformed into
+numbers using the information generated in the view ``\_versions''.
+
+The end result is a text file of about 600MB that can be used by the tools in
+Dose to analyse the packages in NPM. However, to analize this dataset it is
+required to run the tools in a computer with at least 64 GB of ram for
+distcheck. In a computer with an Intel Core i5 running at 3GHz it takes about 21
+hours to execute distcheck.
+
+
+\section{Additions to Dose}
+
+A few additions have been done in dose with the help of Pietro Abate in the
+parsing of the semantic versioning and the range syntax of NPM.
+
+NPM uses semantic versioning for the definition of the versions and a custom
+syntax for defining ranges.
+
+The semantic versioning of dose was expanded to include the comparing of the
+prerelease section. For example, a semantic version can be ``1.2.3-pre.0''. A
+simple comparision is done in the first three componentes of the version but in
+the last one (pre.0), the preelease comparision is done as follows:
+
+\begin{itemize}
+  \item Split the string in the dots.
+  \item For each one of the elements, if it is a number, compare using the
+    numeric comparator.
+  \item If it is a string, compare using the string comparator.
+  \item The version with less elements is bigger than a version with less.
+\end{itemize}
+
+
+A range in npm is defined by the following grammar:
+
+\begin{verbatim}
+range-set  ::= range ( logical-or range ) *
+logical-or ::= ( ' ' ) * '||' ( ' ' ) *
+range      ::= hyphen | simple ( ' ' simple ) * | ''
+hyphen     ::= partial ' - ' partial
+simple     ::= primitive | partial | tilde | caret
+primitive  ::= ( '<' | '>' | '>=' | '<=' | '=' | ) partial
+partial    ::= xr ( '.' xr ( '.' xr qualifier ? )? )?
+xr         ::= 'x' | 'X' | '*' | nr
+nr         ::= '0' | ['1'-'9'] ( ['0'-'9'] ) *
+tilde      ::= '~' partial
+caret      ::= '^' partial
+qualifier  ::= ( '-' pre )? ( '+' build )?
+pre        ::= parts
+build      ::= parts
+parts      ::= part ( '.' part ) *
+part       ::= nr | [-0-9A-Za-z]+
+\end{verbatim}
+
+with a lot of syntax sugar. The desugaring process is implemented in the npm
+module of dose.
+
+
+
+
+\section{ONPM and Opam Repository}
+
+\subsection{Opam Repository}
+
+An opam repository have been done
+\footnote{https://github.com/fgaray/opam-npm-repository} that contains the NPM
+packages converted into a format that can be understand by opam. A simple
+example can be found \footnote{https://github.com/fgaray/opam-npm-repository/tree/master/packages/underscore/underscore.1.8.3}
+there for the underscore JavaScript library.
+
+This folder contains three files and a folder:
+
+\begin{itemize}
+  \item \textbf{descr}: A simple description for the package.
+  \item \textbf{opam}: Information of the package including dependencies.
+  \item \textbf{url}: Address of the package and checksum.
+  \item \textbf{files}: Folder with just one file called underscore.install with
+    routes of where to put the files from underscore.
+\end{itemize}
+
+In the case of underscore, the install file contains:
+
+\begin{verbatim}
+lib: [
+    "underscore.js" 
+    "underscore-min.js"
+    "package.json"
+    "underscore-min.map"
+]
+\end{verbatim}
+
+That tells opam to copy this files into the lib directory.
+
+
+\subsection{Node's module system}
+
+Node is the responsable of the search of modules in the file system with a
+function called ``require''. The algorithm
+\footnote{https://nodejs.org/docs/latest/api/modules.html\#modules\_all\_together}
+works testing each directory in an internal list of node and in each one of this
+node try to find a folder with the name of the module requested.
+
+For example, if we want to load ``underscore'', then require("underscore") in a
+list of ``\[X, Y, Z\]'' directories will try to load the directories
+``X/underscore'', ``Y/underscore'' and ``Z/underscore''.
+
+We can use the enviroment variable \$NODE\_PATH to add new directories to be
+searched by NPM.
+
+\subsection{ONPM}
+
+This program uses the command line of opam to install packages from the
+opam-npm-repository creating the needed enviroment variables and switchs in
+opaswitchs in opam.
+
+There is a command implemented called ``install'' that can receive as an
+argument a package name to be installed in the global-js switch.
+
+If install is called without argument, then it searchs for a package.json file
+in the current directory, gets all the dependencies and install them in a new
+switch with the name of the proyect.
 
 
 \end{document}
