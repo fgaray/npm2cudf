@@ -19,13 +19,14 @@
 
 \section{NPM package repository}
 
-The NPM (Node Package Manager) is the de factor package manager for the nodejs
+
+The NPM (Node Package Manager) is the de facto package manager for the nodejs
 ecosystem. Users use a centralized server called registry where all the public
-packages' metadata is stored using a CouchDB database. A public replica of this
+metadata of the packages is stored using a CouchDB database. A public replica of this
 database can be found in \url{https://skimdb.npmjs.com/}.
 
-Since CouchDB allows easy replication, we can ask a local database to replicate
-the registry of NPM and even to use a continous replication, that means that
+Since CouchDB allows easily replication, we can ask a local database to replicate
+the registry of NPM and even to use a continuous replication, that means that
 every time there is a change in the master database, the replica will be update
 with them.
 
@@ -34,7 +35,7 @@ source to \url{https://skimdb.npmjs.com/} and the destination to ``registry''.
 
 Notice that there is a entry in the database that prevents the replication of
 more packages once is copied to the local database. This document can be
-identified by the id ``\_design/app'' and it is sufficient to delete it and
+identified by the id ``\_design/app'' and it is sufficient with delete it and
 resume the replication.
 
 At the moment of the writing of this document the database has a size of 1.3 GB
@@ -49,11 +50,11 @@ different versions of the ``package.json''
 \footnote{https://docs.npmjs.com/files/package.json}:
 
 \begin{itemize}
-    \item \textbf{\_id}: An unique string id of the package, it is the same that the
+    \item \textbf{\_id}: A unique string id of the package, it is the same that the
         name.
     \item \textbf{name}: The name of the package.
     \item \textbf{description}: A short description of the package.
-    \item \textbf{dist-tags}: A JSON dictionary with named tags pointing to versions.
+    \item \textbf{dist-tags}: A JSON dictionary with name tags pointing to versions.
         For example ``latest: 13.0.0''.
     \item \textbf{versions}: A JSON dictionary where each key is a version of the
         package with the following structure:
@@ -134,10 +135,9 @@ are:
 A simple map can be made betweet some of this scripts and the one in opam:
 
 
-
 \begin{tabularx}{\textwidth}{|c|X|}
         \hline
-        NPM script              & opam field    \\ \hline \hline
+        NPM Script              & Opam Field    \\ \hline \hline
         preinstall              & build         \\ \hline
         install,postinstall     & install       \\ \hline
         preuninstall,uninstall  & remove        \\ \hline
@@ -162,7 +162,7 @@ of using views is that when a new package is added to the registry
 \subsubsection{versions.ts}
 
 This view takes every document from the database and apply a map function to fix
-and extract the avalaible versions and license of the packages and numerate
+and extract the available versions and license of the packages and numerate
 them. For example, a package with the following json description:
 
 \begin{minted}{json}
@@ -195,6 +195,7 @@ Will generate this document:
 ]
 \end{minted}
 
+
 This view also fixes some versions with a bad syntax. Some packages have errors
 in the versions, for example, ``1.0.2beta'' with the module ``npm-package-arg''
 can fix.
@@ -202,7 +203,8 @@ can fix.
 In order to be able to use this module inside CouchDB, we had to create a big
 JavsScript file using browserify to merge all the code in only one source file.
 
-This view will be installer in ``registry/\_versions''.
+This view will be installed in ``registry/\_versions''.
+
 
 \subsubsection{deps.ts}
 
@@ -365,8 +367,8 @@ syntax for defining ranges.
 
 The semantic versioning of dose was expanded to include the comparing of the
 prerelease section. For example, a semantic version can be ``1.2.3-pre.0''. A
-simple comparision is done in the first three componentes of the version but in
-the last one (pre.0), the preelease comparision is done as follows:
+simple comparison is done in the first three componentes of the version but in
+the last one (pre.0), the prerelease comparison is done as follows:
 
 \begin{itemize}
   \item Split the string in the dots.
@@ -456,7 +458,7 @@ searched by NPM.
 \subsection{ONPM}
 
 This program uses the command line of opam to install packages from the
-opam-npm-repository creating the needed enviroment variables and switchs in
+opam-npm-repository creating the needed environment variables and switches in
 opaswitchs in opam.
 
 There is a command implemented called ``install'' that can receive as an
