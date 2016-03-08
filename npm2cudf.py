@@ -3,27 +3,42 @@ import pystache
 from multiprocessing import Pool
 import requests
 import codecs
+import base64
 
 preamble = """
 preamble: 
-property: number: string
 property: license: string
-
-
 """
-
-
 ## Template for a item in a cudf file
+# cudf = """package: {{name}}
+# version: {{version}}
+# {{#dependencies}}
+# depends: {{dependencies}}
+# {{/dependencies}}
+# number: {{number}}
+# license: {{license}}
+# """
+
+# cudf = """package: {{name}}
+# version: {{version}}
+# {{#dependencies}}
+# depends: {{dependencies}}
+# {{/dependencies}}
+# """
+
 cudf = """package: {{name}}
-version: {{version}}
+version: {{number}}
 {{#dependencies}}
 depends: {{dependencies}}
 {{/dependencies}}
-number: {{number}}
 license: {{license}}
 """
 
-
+def fix_license(license):
+    try:
+        return license.replace("\n", " ")
+    except:
+        return str(license).replace("\n", " ")
 
 def get_all_docs(step, index):
     """
@@ -43,7 +58,7 @@ def generate_table_versions():
         for doc in r["value"]:
             package[r["id"]][doc["version"]] = {
                     "number": doc["number"]
-                    , "license": doc["license"]
+                    , "license": fix_license(doc["license"])
                     }
     return package
 
@@ -55,7 +70,8 @@ def generate_deps_cudf(deps):
     extras = []
     for i, d in enumerate(deps.keys()):
         try:
-            number_deps = map(lambda version: table[d][version]["number"], deps[d])
+            # number_deps = map(lambda version: table[d][version]["number"], deps[d])
+            number_deps = map(lambda version: version, deps[d])
             versions = map(lambda version: fix_name(d) + " = " + str(version), number_deps)
             versions =  " | ".join(versions)
             if len(versions) != 0:
@@ -161,36 +177,7 @@ def generate_cudf(table, packages, pool = None):
 
 
 def fix_url(url):
-    if is_scoped(url):
-        url = "scoped" + url 
-    elif is_github(url):
-        url = "github" + url
-    url = url.replace("^", "").replace("~", "").replace("/", "").replace("@", "")
-    url = url.replace("*", "any")
-    url = url.replace("|", "-")
-    url = url.replace("&", "and")
-    url = url.replace("?", "q")
-    url = url.replace(">=", "")
-    url = url.replace("=", "equals")  # Esto es solo para un error en swign=
-    url = url.replace("#", "hash")
-    url = url.replace(" ", "space")
-    url = url.replace("{}", "")
-    url = url.replace("<2", "")
-    url = url.replace("<", "lt")
-    url = url.replace(">", "gt")
-    url = url.replace(":", "-")
-    url = url.replace("_", "%5f")
-    url = url.replace(".", "dot")
-    url = url.replace("'", "quote")
-    url = url.replace("\"", "quote")
-    url = url.replace("!", "exclamation")
-    url = url.replace(";", "comma")
-    url = url.replace("(", "par-open")
-    url = url.replace(")", "par-close")
-    url = url.replace("\\", "back-slash")
-    special = u"\u00F8"
-    url = url.replace(special, "empty-special-char")
-    return url
+    return base64.b64encode(url)
 
 
 def concat(l):
@@ -204,7 +191,7 @@ def concat(l):
 if __name__ == "__main__":
     table = generate_table_versions()
     i = 0
-    step = 20000
+    step = 50000
     pool = None
     f = codecs.open("npm.cudf", "w", encoding = "utf-8")
     f.write(preamble)

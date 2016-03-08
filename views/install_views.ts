@@ -79,6 +79,16 @@ var versions_view: View = {
 };
 
 
+var versions_fixed_view: View = {
+    "_id": "_design/versions_fixed",
+    "language": "javascript",
+    "views": {
+        "all": {
+            "map": "versions_fixed_all.js"
+        }
+    }
+};
+
 
 var deps_view: View = {
     "_id": "_design/deps",
@@ -93,8 +103,9 @@ var deps_view: View = {
 
 // The views to be installed
 var all_views: View[] = [
-        versions_view
+        //versions_view
         //deps_view
+        versions_fixed_view
     ];
 
 
