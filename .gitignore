@@ -1,0 +1,16 @@
+*.js
+*.cmi
+*.cmx
+*.o
+*.cudf
+*.pef
+npm2cudf
+memprof
+*.aux
+_minted-report
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.toc
+*.pdf

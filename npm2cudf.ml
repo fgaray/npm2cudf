@@ -59,6 +59,12 @@ let double_base64 name =
   Bytes.to_string (Base64.str_encode str)
 
 
+let fix_name name =
+  if isInvalidName name
+    then double_base64 name
+    else name
+
+
 let parse_range x name =
   let str = Printf.sprintf "\"foo\" : \"%s\"" x in
   let and_sep x = if x = "" then "" else " | " in
@@ -74,7 +80,7 @@ let parse_range x name =
     if isInvalidName name
     then
       let name_base64 = double_base64 name in
-      Printf.sprintf "%s%s%s (%s)" acc (and_sep acc) name_base64 (const c)
+      Printf.sprintf "%s%s%s (%s)" acc (and_sep acc) name (const c)
     else
       if name = ""
         then acc
@@ -95,12 +101,13 @@ let get_deps_version deps =
   try
     deps
     |> to_assoc 
-    |> List.map (fun (n, r) -> {
+    (*|> (fun x -> print_endline (string_of_int (List.length x)); x)*)
+    |> List.map (fun (n, r) -> 
+      {
       package = n;
       range =
-        try parse_range (to_string r) n
-        with
-          | Invalid_argument _ -> ""
+        try parse_range (r |> member "fixed" |> to_string) n
+        with Invalid_argument _ -> "hola"
     })
   with Type_error _ -> []
 
@@ -127,9 +134,6 @@ let get_data_list xs =
   let get_id json = json |> member "id" |> to_string in
   xs |> to_list |> List.map (fun json -> json |> member "value" |> get_data (get_id json))
 
-let get_data_obj json =
-  let id = json |> member "_id" |> to_string in
-  get_data id json
 
 let remove_prefix = List.map (Str.replace_first (Str.regexp "package/") "")
 
@@ -160,6 +164,8 @@ let generate_all l oc =
 
 let step = 25000
 
+(*We iterate in chunks of 25000 packages because the dataset is too big for the
+ * json parser *)
 let rec iterate_count oc count =
   print_endline (string_of_int count);
   if count >= 250000
@@ -173,7 +179,7 @@ let rec iterate_count oc count =
       
 
 let () =
-  let oc = open_out "npm2.cudf" in
+  let oc = open_out "npm2_fix_names.cudf" in
   iterate_count oc 0;
   close_out oc
   (*ignore (Pcre.extract scoped_re "JQueryUI");*)

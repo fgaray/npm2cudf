@@ -8,6 +8,9 @@ interface Version{
     description: string;
     dependencies: Dependencies;
     license?: string;
+    repository?: any;
+    dist: any;
+    maintainers: any;
 }
 
 
