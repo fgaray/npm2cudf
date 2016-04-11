@@ -341,6 +341,9 @@ All the generated json are stored in a second database called
 
 
 
+\subsubsection{versions\_fixed.ts}
+
+
 \subsection{CUDF file generator}
 
 The generation of the CUDF file in done in npm2cudf.py, a python program that
@@ -403,6 +406,9 @@ part       ::= nr | [-0-9A-Za-z]+
 with a lot of syntax sugar. The desugaring process is implemented in the npm
 module of dose.
 
+
+Also, a comparator function was created to take into account the extensions
+(like the build and pre qualifier) of NPM to the semantic versioning format.
 
 
 

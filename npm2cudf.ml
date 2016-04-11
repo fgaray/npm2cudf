@@ -80,7 +80,7 @@ let parse_range x name =
     if isInvalidName name
     then
       let name_base64 = double_base64 name in
-      Printf.sprintf "%s%s%s (%s)" acc (and_sep acc) name (const c)
+      Printf.sprintf "%s%s%s (%s)" acc (and_sep acc) name_base64 (const c)
     else
       if name = ""
         then acc
@@ -101,7 +101,6 @@ let get_deps_version deps =
   try
     deps
     |> to_assoc 
-    (*|> (fun x -> print_endline (string_of_int (List.length x)); x)*)
     |> List.map (fun (n, r) -> 
       {
       package = n;
@@ -126,7 +125,7 @@ let get_data_versions versions =
 
 let get_data id doc =
   {
-  id = id;
+  id = fix_name id;
   versions = get_data_versions doc;
   }
 
@@ -179,7 +178,7 @@ let rec iterate_count oc count =
       
 
 let () =
-  let oc = open_out "npm2_fix_names.cudf" in
+  let oc = open_out "npm2_fix_names.pef" in
   iterate_count oc 0;
   close_out oc
   (*ignore (Pcre.extract scoped_re "JQueryUI");*)
