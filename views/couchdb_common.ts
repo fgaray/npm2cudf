@@ -11,6 +11,8 @@ interface Version{
     repository?: any;
     dist: any;
     maintainers: any;
+    scripts: any;
+    bin: any;
 }
 
 

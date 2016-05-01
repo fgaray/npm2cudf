@@ -153,6 +153,7 @@ let generate_all l oc =
     List.iter (fun (version, v) ->
     Printf.fprintf oc "\n";
       Printf.fprintf oc "Package: %s\n" package.id;
+      Printf.fprintf oc "Conflicts: %s\n" package.id;
       Printf.fprintf oc "Version: %s\n" version;
       if List.length v.deps > 0
         then Printf.fprintf oc "Depends: %s\n\n" (string_of_deps v.deps)

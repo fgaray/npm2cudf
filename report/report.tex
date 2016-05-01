@@ -152,7 +152,7 @@ Several tools were developed to convert the data in the registry into a CUDF
 file. Two CouchDB's views, a typescript program and a python program.
 
 The order of execute is: install the views, run deps\_generator.js and finally
-npm2cudf.py.
+npm2cudf.
 
 \subsection{Views}
 
@@ -346,18 +346,8 @@ All the generated json are stored in a second database called
 
 \subsection{CUDF file generator}
 
-The generation of the CUDF file in done in npm2cudf.py, a python program that
-takes the data generated in the views and in ``deps\_generator.ts''.
-
-This program iterates over all the packages in ``registry\_dependencies'' and
-for each version it generates a CUDF entry with the dependencies tranformed into
-numbers using the information generated in the view ``\_versions''.
-
-The end result is a text file of about 600MB that can be used by the tools in
-Dose to analyse the packages in NPM. However, to analize this dataset it is
-required to run the tools in a computer with at least 64 GB of ram for
-distcheck. In a computer with an Intel Core i5 running at 3GHz it takes about 21
-hours to execute distcheck.
+A program was created in OCaml called npm2cudf that uses the data from the view
+versions\_fixed to create a CUDF file to be used in dose.
 
 
 \section{Additions to Dose}
@@ -446,6 +436,20 @@ lib: [
 That tells opam to copy this files into the lib directory.
 
 
+Some packages that use scripts in the build, install or remove step are
+transformed into something like:
+
+\begin{minted}{bash}
+sh -c 'COMMAND'
+\end{minted}
+
+We use sh to run the commands because NPM uses a shell to run the scripts.
+
+All of this can be done automatically with a program inside the
+opam-npm-repository/utils/converter/. It receive a package name and generates
+in the current folder the structure needed by opam to install the package.
+
+
 \subsection{Node's module system}
 
 Node is the responsable of the search of modules in the file system with a
@@ -461,7 +465,7 @@ list of ``\[X, Y, Z\]'' directories will try to load the directories
 We can use the enviroment variable \$NODE\_PATH to add new directories to be
 searched by NPM.
 
-\subsection{ONPM}
+\subsection{Opam}
 
 This program uses the command line of opam to install packages from the
 opam-npm-repository creating the needed environment variables and switches in

@@ -47,7 +47,9 @@ function map(){
             dependencies: fix_deps(version.dependencies),
             dist: version.dist,
             maintainers: version.maintainers,
-            repository: version.repository
+            repository: version.repository,
+            scripts: version.scripts,
+            bin: version.bin
         };
         versions[fix_version(key)] = output;
     }
